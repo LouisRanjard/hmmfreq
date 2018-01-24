@@ -13,6 +13,8 @@ try siz=options.siz; catch siz=50; end
 try rdsingle=options.rdsingle; catch rdsingle='/home/louis/Documents/Projects/Pooling3/Sequencing/Assemblies/hmm_freq/sample11/11.singleends.txt'; end
 try rdpair=options.rdpair; catch rdpair='/home/louis/Documents/Projects/Pooling3/Sequencing/Assemblies/hmm_freq/sample11/11.pairends.txt'; end
 try error_count=options.error_count; catch error_count=0.05; end
+% expected probabilities (proportions)
+try true_freq=options.true_freq; catch true_freq=[.625 .25 .125] ; end
 
 % load reads
 [~, n_l_s] = system(['grep -c ".$" ' rdsingle]);
@@ -54,6 +56,7 @@ if nrdp>0
 else
     rdp = struct('Header','','Sequence','','pos',0,'ends',0) ;
 end
+if ( (isnan(nrdp) && isnan(nrds)) || (nrdp+nrds==0) ) error('No reads found in %s and %s',rdsingle,rdpair) ; end
 reads = [rds rdp];
 % get the ends position in the alignement for each read
 tmp = num2cell([reads.pos] + cellfun(@numel,{reads.Sequence}) - 1) ; [reads.ends] = tmp{:} ;
@@ -82,8 +85,7 @@ transition = NaN(size(Y,1),length(xtl)) ; % transition between states
 seqs = cell(nsub,length(xtl)) ; % save the subsequences strings
 tr = zeros(1,nsub) ; % transition cost (sequence edit distance or sequence similarity pariwise) for each sequence
 
-% expected probabilities (proportions)
-true_freq = [.625 .25 .125] ; % keep the 3 most frequent subsequences
+% keep the 3 most frequent subsequences
 if options.cnt_per_state==1
   hap_count = zeros(27,max([reads.ends]),nhap) ; % keep track of counts independently for each state path 
 else
@@ -353,6 +355,7 @@ for x=length(xtl):-1:pos_s % index on windows
         I = transition(I,x) ;
     else
         [~,I] = max(emission(:,x-1)) ;
+        wstart = wstart-lag ;
     end
 end
 if ~isnan(I) % glue the first chunk of each sequence
@@ -515,6 +518,7 @@ for x=1:pos_s % index on windows
         I = transition(I,x) ;
     else
         [~,I] = max(emission(:,x+1)) ;
+        wstart = wstart+lag ;
     end
 end
 if ~isnan(I) % glue the first chunk of each sequence
@@ -522,6 +526,11 @@ if ~isnan(I) % glue the first chunk of each sequence
     haplo(2).Sequence = [ haplo(2).Sequence(1:x-1) seqs{y(I,2),x}(1:(siz-1)) haplo(2).Sequence(x+siz:end) ] ; 
     haplo(3).Sequence = [ haplo(3).Sequence(1:x-1) seqs{y(I,3),x}(1:(siz-1)) haplo(3).Sequence(x+siz:end) ] ; 
 end
+
+% remove any gaps inserted in the sequences
+haplo(1).Sequence = haplo(1).Sequence(haplo(1).Sequence~='-') ;
+haplo(2).Sequence = haplo(2).Sequence(haplo(2).Sequence~='-') ;
+haplo(3).Sequence = haplo(3).Sequence(haplo(3).Sequence~='-') ;
 
 if options.bothend==1
     haploR=haplo;
