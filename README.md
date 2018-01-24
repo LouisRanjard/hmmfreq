@@ -51,5 +51,5 @@ options = struct('rdpair', 'file.paired.txt',...
      'prewinshape', 'triangle_around', 'verbose', 0, 'error_count', 0.05, 'substate', 0, 'cnt_per_state', 1,...
      'transit_error', 1, 'freq_limit', 0.01, 'bothend', 0, 'true_freq', target_freq) ;
 haplo = hmmfreq_dirmn2D(options) ;
-fastawrite(['./hmmfreq_' num2str(i) '_' num2str(k+j) '.fa'],haplo) ; % using the Matlab Bioinformatics Toolbox
+fastawrite('reconstructed_haplotypes.fasta',haplo) ; % using the Matlab Bioinformatics Toolbox
 ```
